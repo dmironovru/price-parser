@@ -1,0 +1,35 @@
+# Зависимости
+node_modules/
+package-lock.json
+go.sum
+
+# Сборка
+dist/
+.next/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+
+# Временные файлы
+*.tmp
+*.log
+/tmp/
+
+# Файлы IDE
+.vscode/
+.idea/
+*.swp
+
+# Кэш
+.cache/
+pkg/
+vendor/
+
+# Electron
+electron-app/node_modules/
+electron-app/dist/
+
+# Окружение
+.env.local
+.env.*.local
