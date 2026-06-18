@@ -1,4 +1,3 @@
-```markdown
 # 🧾 AI Price Parser — Умный редактор прайс-листов
 
 **AI Price Parser** — это веб-приложение для массового и точечного редактирования цен в Excel-прайсах.  
@@ -26,9 +25,9 @@
 |-----------|------------|
 | **Backend** | Go + Fiber |
 | **Frontend** | Next.js 15 + React + Tailwind + shadcn/ui |
-| **База данных** | PostgreSQL + Redis (для очередей) |
 | **Обработка Excel** | Библиотека excelize |
-| **Деплой** | Docker Compose |
+
+> ⚡ Проект работает без Docker, PostgreSQL и Redis — все данные обрабатываются в памяти и сохраняются в Excel-файл.
 
 ---
 
@@ -78,81 +77,25 @@
 
 ## ⚙️ Установка и запуск
 
-### 🐳 Через Docker (рекомендуется)
+### 📦 Требования
+
+- **Go** (версия 1.22+)
+- **Node.js** (версия 20+)
+- **npm** (устанавливается вместе с Node.js)
+
+---
+
+### 🚀 Запуск
 
 ```bash
 # Клонируйте репозиторий
 git clone https://github.com/dmironovru/price-parser.git
 cd price-parser
 
-# Создайте .env из примера
-cp .env.example .env
-
-# Запустите одной командой
-./start.sh
-```
-
-### 🖥️ Локальный запуск (без Docker)
-
-```bash
 # Установите зависимости
 cd backend && go mod download
-cd frontend && npm install
+cd ../frontend && npm install
+cd ..
 
-# Запустите всё одной командой
+# Запустите проект одной командой
 ./start.sh
-```
-
-### 🛑 Остановка
-
-```bash
-./stop.sh
-```
-
----
-
-## 📁 Структура проекта
-
-```
-ai-parser/
-├── backend/
-│   ├── cmd/api/main.go       # Основной бэкенд на Go
-│   ├── internal/             # Внутренние модули
-│   └── go.mod
-├── frontend/
-│   ├── app/page.tsx          # Главная страница
-│   ├── components/           # UI-компоненты
-│   └── package.json
-├── docker-compose.yml        # Конфигурация Docker
-├── .env.example              # Пример переменных окружения
-├── start.sh / stop.sh        # Скрипты запуска/остановки
-├── screenshots/              # Скриншоты для README
-└── README.md
-```
-
----
-
-## 📋 Основные эндпоинты API
-
-| Метод | Эндпоинт | Описание |
-|-------|----------|----------|
-| POST | `/upload` | Загрузка файла, анализ структуры |
-| GET | `/api/products/:file_id` | Получение всех товаров из файла |
-| POST | `/apply-discounts` | Применение массовых скидок |
-| POST | `/api/update-price` | Обновление цены конкретной строки |
-| POST | `/api/reset-manual` | Сброс всех ручных правок |
-| GET | `/download/:file_id` | Скачивание результата в Excel |
-
----
-
-## 👤 Автор
-
-**Дмитрий Миронов**  
-GitHub: [dmironovru](https://github.com/dmironovru)
-
----
-
-## 📄 Лицензия
-
-MIT License
-```

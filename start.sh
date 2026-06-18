@@ -5,7 +5,7 @@ cd ~/ai-parser
 
 # Запускаем Docker
 echo "📦 Starting Docker..."
-docker-compose up -d
+docker-compose up -d --remove-orphans
 sleep 3
 
 # Запускаем бэкенд в фоне
