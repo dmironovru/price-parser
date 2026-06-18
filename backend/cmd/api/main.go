@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -33,6 +34,8 @@ type Product struct {
 	Price    float64 `json:"price"`
 	Discount float64 `json:"discount"`
 	NewPrice float64 `json:"new_price"`
+	Manual   bool    `json:"manual"`
+	RowNum   int     `json:"row_num"`
 }
 
 func main() {
@@ -85,21 +88,89 @@ func main() {
 			}
 		}
 
-		preview := make([][]string, 0)
-		for i := 0; i < len(rows) && i < 10; i++ {
-			preview = append(preview, rows[i])
-		}
-
 		return c.JSON(fiber.Map{
 			"file_id":    fileID,
 			"filename":   file.Filename,
-			"preview":    preview,
 			"total":      len(rows),
 			"categories": categories,
 		})
 	})
 
-	// 2. Apply discounts
+	// 2. Get all products
+	app.Get("/api/products/:file_id", func(c *fiber.Ctx) error {
+		fileID := c.Params("file_id")
+		filePath := filepath.Join(tempDir, fileID+".xlsx")
+
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			return c.Status(404).JSON(fiber.Map{"error": "file not found"})
+		}
+
+		f, err := excelize.OpenFile(filePath)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		defer f.Close()
+
+		rows, err := f.GetRows(f.GetSheetName(0))
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		// Загружаем метки ручных правок
+		manualPath := filepath.Join(tempDir, fileID+"_manual.json")
+		manualData := make(map[int]bool)
+		if data, err := os.ReadFile(manualPath); err == nil {
+			json.Unmarshal(data, &manualData)
+		}
+
+		var products []Product
+		for i, row := range rows {
+			if len(row) < 3 {
+				continue
+			}
+			a := strings.TrimSpace(row[0])
+			b := strings.TrimSpace(row[1])
+			c := strings.TrimSpace(row[2])
+
+			if c == "" {
+				continue
+			}
+
+			priceStr := strings.ReplaceAll(c, " ", "")
+			priceStr = strings.ReplaceAll(priceStr, ",", ".")
+			price, err := strconv.ParseFloat(priceStr, 64)
+			if err != nil || price == 0 {
+				continue
+			}
+
+			// Пропускаем категории (A не пусто, B пусто)
+			if a != "" && b == "" && strings.Contains(a, ".") {
+				continue
+			}
+
+			if a == "" && b == "" {
+				continue
+			}
+
+			if b == "" {
+				b = a
+				a = ""
+			}
+
+			products = append(products, Product{
+				SKU:      a,
+				Name:     b,
+				Price:    price,
+				NewPrice: price,
+				Manual:   manualData[i],
+				RowNum:   i,
+			})
+		}
+
+		return c.JSON(products)
+	})
+
+	// 3. Apply discounts
 	app.Post("/apply-discounts", func(c *fiber.Ctx) error {
 		var req struct {
 			FileID   string         `json:"file_id"`
@@ -112,9 +183,16 @@ func main() {
 
 		filePath := filepath.Join(tempDir, req.FileID+".xlsx")
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			return c.Status(404).JSON(fiber.Map{"error": "file not found: " + req.FileID})
+			return c.Status(404).JSON(fiber.Map{"error": "file not found"})
 		}
 
+		manualPath := filepath.Join(tempDir, req.FileID+"_manual.json")
+		manualData := make(map[int]bool)
+		if data, err := os.ReadFile(manualPath); err == nil {
+			json.Unmarshal(data, &manualData)
+		}
+
+		// Создаём копию файла для скидок
 		f, err := excelize.OpenFile(filePath)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
@@ -172,6 +250,7 @@ func main() {
 				continue
 			}
 
+			// Если категория не выбрана — пропускаем
 			if !categoriesMap[currentCategory] {
 				continue
 			}
@@ -196,43 +275,48 @@ func main() {
 			var discount float64 = 0
 			var newPrice float64 = price
 
-			// Приоритет: произвольная > первичный/вторичный
-			if req.Discount.ApplyCustom {
-				if usePercent {
-					discount = req.Discount.CustomPercent
-					if discount > 0 {
-						newPrice = price * (1 - discount/100)
+			// Если есть ручная правка — пропускаем
+			if manualData[i] {
+				newPrice = price
+				discount = 0
+			} else {
+				// Приоритет: произвольная > первичный/вторичный
+				if req.Discount.ApplyCustom {
+					if usePercent {
+						discount = req.Discount.CustomPercent
+						if discount > 0 {
+							newPrice = price * (1 - discount/100)
+						}
+					} else {
+						discount = req.Discount.CustomRub
+						newPrice = price - discount
 					}
 				} else {
-					discount = req.Discount.CustomRub
-					newPrice = price - discount
-				}
-			} else {
-				nameLower := strings.ToLower(name)
-				if strings.Contains(nameLower, "первичный") {
-					if usePercent {
-						discount = req.Discount.PrimaryPercent
-						if discount > 0 {
-							newPrice = price * (1 - discount/100)
+					nameLower := strings.ToLower(name)
+					if strings.Contains(nameLower, "первичный") {
+						if usePercent {
+							discount = req.Discount.PrimaryPercent
+							if discount > 0 {
+								newPrice = price * (1 - discount/100)
+							}
+						} else {
+							discount = req.Discount.PrimaryRub
+							newPrice = price - discount
 						}
-					} else {
-						discount = req.Discount.PrimaryRub
-						newPrice = price + discount
-					}
-				} else if strings.Contains(nameLower, "вторичный") || strings.Contains(nameLower, "повторный") {
-					if usePercent {
-						discount = req.Discount.SecondaryPercent
-						if discount > 0 {
-							newPrice = price * (1 - discount/100)
+					} else if strings.Contains(nameLower, "вторичный") || strings.Contains(nameLower, "повторный") {
+						if usePercent {
+							discount = req.Discount.SecondaryPercent
+							if discount > 0 {
+								newPrice = price * (1 - discount/100)
+							}
+						} else {
+							discount = req.Discount.SecondaryRub
+							newPrice = price - discount
 						}
-					} else {
-						discount = req.Discount.SecondaryRub
-						newPrice = price + discount
 					}
 				}
 			}
 
-			// Если цена изменилась
 			if newPrice != price {
 				cellName, _ := excelize.CoordinatesToCellName(3, i+1)
 				newFile.SetCellValue(sheet, cellName, fmt.Sprintf("%.2f", newPrice))
@@ -245,6 +329,8 @@ func main() {
 				Price:    price,
 				Discount: discount,
 				NewPrice: newPrice,
+				Manual:   manualData[i],
+				RowNum:   i,
 			}
 			products = append(products, product)
 		}
@@ -260,16 +346,101 @@ func main() {
 		})
 	})
 
-	// 3. Download
+	// 4. Download
 	app.Get("/download/:file_id", func(c *fiber.Ctx) error {
 		fileID := c.Params("file_id")
 		filePath := filepath.Join(tempDir, fileID+"_discount.xlsx")
 
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			return c.Status(404).JSON(fiber.Map{"error": "file not found"})
+			// Если нет файла со скидками, скачиваем исходный
+			filePath = filepath.Join(tempDir, fileID+".xlsx")
+			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+				return c.Status(404).JSON(fiber.Map{"error": "file not found"})
+			}
+			return c.Download(filePath, "prices.xlsx")
 		}
 
 		return c.Download(filePath, "prices_with_discount.xlsx")
+	})
+
+	// 5. Update price manually
+	app.Post("/api/update-price", func(c *fiber.Ctx) error {
+		var req struct {
+			FileID   string  `json:"file_id"`
+			RowNum   int     `json:"row_num"`
+			NewPrice float64 `json:"new_price"`
+		}
+
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
+		}
+
+		// Определяем, какой файл редактировать: если есть _discount, то его, иначе исходный
+		basePath := filepath.Join(tempDir, req.FileID+".xlsx")
+		discountPath := filepath.Join(tempDir, req.FileID+"_discount.xlsx")
+
+		targetPath := basePath
+		if _, err := os.Stat(discountPath); err == nil {
+			targetPath = discountPath
+		}
+
+		if _, err := os.Stat(targetPath); os.IsNotExist(err) {
+			return c.Status(404).JSON(fiber.Map{"error": "file not found"})
+		}
+
+		f, err := excelize.OpenFile(targetPath)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		defer f.Close()
+
+		sheet := f.GetSheetName(0)
+		cellName, _ := excelize.CoordinatesToCellName(3, req.RowNum+1)
+
+		// Сохраняем с двумя знаками после запятой
+		if err := f.SetCellValue(sheet, cellName, fmt.Sprintf("%.2f", req.NewPrice)); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to update cell"})
+		}
+
+		if err := f.Save(); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "failed to save"})
+		}
+
+		// Сохраняем метку ручной правки
+		manualPath := filepath.Join(tempDir, req.FileID+"_manual.json")
+		manualData := make(map[int]bool)
+		if data, err := os.ReadFile(manualPath); err == nil {
+			json.Unmarshal(data, &manualData)
+		}
+		manualData[req.RowNum] = true
+		if jsonData, err := json.Marshal(manualData); err == nil {
+			os.WriteFile(manualPath, jsonData, 0644)
+		}
+
+		return c.JSON(fiber.Map{
+			"success":   true,
+			"row_num":   req.RowNum,
+			"new_price": req.NewPrice,
+			"manual":    true,
+		})
+	})
+
+	// 6. Reset manual edits
+	app.Post("/api/reset-manual", func(c *fiber.Ctx) error {
+		var req struct {
+			FileID string `json:"file_id"`
+		}
+
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
+		}
+
+		manualPath := filepath.Join(tempDir, req.FileID+"_manual.json")
+		if err := os.Remove(manualPath); err != nil && !os.IsNotExist(err) {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+
+		return c.JSON(fiber.Map{"success": true, "message": "Manual resets cleared"})
 	})
 
 	app.Get("/health", func(c *fiber.Ctx) error {

@@ -33,3 +33,4 @@ electron-app/dist/
 # Окружение
 .env.local
 .env.*.local
+.env
