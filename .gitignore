@@ -1,0 +1,75 @@
+# Node
+node_modules/
+.next/
+out/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Go
+backend/price-parser
+backend/bin/
+backend/tmp/
+backend/*.test
+backend/coverage.out
+backend/logs.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.production
+
+# Docker
+*.tar
+*.gz
+
+# Ollama models (большие файлы)
+.ollama/
+ollama_data/
+*.gguf
+
+# Temp
+/tmp/
+/tmp/*
+
+# OS
+.DS_Store
+Thumbs.db
+*.bak
+
+# Logs
+logs/
+*.log
+/backend/logs.txt
+/frontend/logs.txt
+
+# Uploads
+uploads/
+temp_uploads/
+
+# Coverage
+*.cover
+*.out
+coverage.html
