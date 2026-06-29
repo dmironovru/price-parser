@@ -140,7 +140,4 @@ POSTGRES_PASSWORD=parser_pass
 POSTGRES_DB=price_parser
 REDIS_HOST=redis
 OLLAMA_HOST=http://localhost:11434
-
-
-
-<p align="center"> Made with ❤️ by <a href="https://dmitrymironov.ru">Dmitry Mironov</a> </p>
+```
