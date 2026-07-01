@@ -1,3 +1,4 @@
+```markdown
 # 🤖 AI Price Parser
 
 <div align="center">
@@ -51,28 +52,35 @@
 
 ---
 
-## 🚀 Быстрый старт с демо-файлами
-
-В папке [`docs/demo-files/`](docs/demo-files/) лежат готовые прайс-листы для тестирования:
-
-1. **price_autoparts.csv** — автозапчасти
-2. **price_medical.csv** — медицинские услуги
-3. **price_simple.csv** — простой прайс
+## 🚀 Быстрый старт (одна команда!)
 
 ```bash
-# Загрузи любой из них через интерфейс и посмотри, как AI парсит данные
-📦 Установка
-Требования
-Go 1.22+
+git clone https://github.com/dmironovru/price-parser.git
+cd price-parser
+./quickstart.sh
+```
 
-Node.js 20+
+Этот скрипт автоматически:
+1. Установит все необходимые зависимости (zstd, Ollama, Go, Node.js)
+2. Загрузит AI-модель (llama3.2:3b)
+3. Запустит проект
 
-Docker & Docker Compose
+После запуска открой http://localhost:3000
 
-NVIDIA GPU (опционально)
+---
 
-Быстрый старт
-bash
+## 📦 Установка вручную
+
+### Требования
+
+- **Go 1.22+**
+- **Node.js 20+**
+- **Docker & Docker Compose**
+- **NVIDIA GPU** (опционально)
+
+### Пошаговая установка
+
+```bash
 # 1. Клонирование
 git clone https://github.com/dmironovru/price-parser.git
 cd price-parser
@@ -82,19 +90,29 @@ make install
 
 # 3. Запуск в режиме разработки
 make dev
+```
+
 Откройте: http://localhost:3000
 
-🛠️ Команды управления
-Команда	Описание
-make dev	Режим разработки (горячая перезагрузка)
-make build	Сборка продакшен версии
-make start	Запуск продакшен версии
-make stop	Остановка всех сервисов
-make clean	Очистка сборок
-make install	Установка зависимостей
-make deploy	Полный деплой
-🏗️ Архитектура
-text
+---
+
+## 🛠️ Команды управления
+
+| Команда | Описание |
+|---------|----------|
+| `make dev` | Режим разработки (горячая перезагрузка) |
+| `make build` | Сборка продакшен версии |
+| `make start` | Запуск продакшен версии |
+| `make stop` | Остановка всех сервисов |
+| `make clean` | Очистка сборок |
+| `make install` | Установка зависимостей |
+| `make deploy` | Полный деплой |
+
+---
+
+## 🏗️ Архитектура
+
+```
 ┌─────────────────────────────────────────────────────────┐
 │                    Next.js 15 Frontend                   │
 │              (Shadcn UI, Drag-and-Drop)                 │
@@ -117,8 +135,13 @@ text
 │                    AI Worker (Ollama)                    │
 │                   (GPU Accelerated)                     │
 └─────────────────────────────────────────────────────────┘
-📁 Структура проекта
-text
+```
+
+---
+
+## 📁 Структура проекта
+
+```
 price-parser/
 ├── backend/          # Go бэкенд
 ├── frontend/         # Next.js фронтенд
@@ -127,12 +150,18 @@ price-parser/
 │   └── demo-files/   # Демо-файлы
 ├── infra/            # Docker и конфиги
 ├── scripts/          # Скрипты запуска
+├── quickstart.sh     # Автоматическая установка
 ├── Makefile
 └── README.md
-🔧 Переменные окружения
-Создайте .env:
+```
 
-env
+---
+
+## 🔧 Переменные окружения
+
+Создайте `.env` в корне проекта:
+
+```env
 PORT=8080
 POSTGRES_HOST=postgres
 POSTGRES_USER=parser
@@ -140,4 +169,31 @@ POSTGRES_PASSWORD=parser_pass
 POSTGRES_DB=price_parser
 REDIS_HOST=redis
 OLLAMA_HOST=http://localhost:11434
+```
+
+---
+
+## 📂 Демо-файлы
+
+В папке [`docs/demo-files/`](docs/demo-files/) лежат готовые прайс-листы для тестирования:
+
+1. **price_autoparts.csv** — автозапчасти
+2. **price_medical.csv** — медицинские услуги
+3. **price_simple.csv** — простой прайс
+
+```bash
+# Загрузи любой из них через интерфейс и посмотри, как AI парсит данные
+```
+
+---
+
+## 🤝 Лицензия
+
+MIT License — свободно используйте в коммерческих проектах
+
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://dmitrymironov.ru">Dmitry Mironov</a>
+</p>
 ```
