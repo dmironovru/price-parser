@@ -184,13 +184,6 @@ OLLAMA_HOST=http://localhost:11434
 # Загрузи любой из них через интерфейс и посмотри, как AI парсит данные
 ```
 
----
-
-## 🤝 Лицензия
-
-MIT License — свободно используйте в коммерческих проектах
-
----
 
 <p align="center">
   Made with ❤️ by <a href="https://dmitrymironov.ru">Dmitry Mironov</a>
