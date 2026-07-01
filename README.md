@@ -1,4 +1,3 @@
-```markdown
 # 🤖 AI Price Parser
 
 <div align="center">
@@ -196,4 +195,3 @@ MIT License — свободно используйте в коммерческ�
 <p align="center">
   Made with ❤️ by <a href="https://dmitrymironov.ru">Dmitry Mironov</a>
 </p>
-```
